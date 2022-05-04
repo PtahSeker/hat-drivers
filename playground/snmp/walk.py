@@ -112,20 +112,47 @@ async def walk_v1(host, port, community, outputs):
 
 
 async def walk_v2c(host, port, community, outputs):
+    endpoint = await udp.create(local_addr=None,
+                                remote_addr=(host, port))
     name = (0, 0)
     request_id = 0
     max_repetitions = 10
-    data = common.Data(type=common.DataType.EMPTY,
-                       name=name,
-                       value=None)
-    pdu = encoder.v2c.BulkPdu(request_id=request_id,
-                              non_repeaters=0,
-                              max_repetitions=max_repetitions,
-                              data=data)
-    req_msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.GET_BULK_REQUEST,
-                              community=community,
-                              pdu=pdu)
-    print('Not implemented!')
+    info = {'data_count': {}, 'data_types': {}, 'errors': {}}
+    while True:
+        data = common.Data(type=common.DataType.UNSPECIFIED,
+                           name=name,
+                           value=None)
+        pdu = encoder.v2c.BulkPdu(request_id=request_id,
+                                  non_repeaters=0,
+                                  max_repetitions=max_repetitions,
+                                  data=[data])
+        req_msg = encoder.v2c.Msg(type=encoder.v2c.MsgType.GET_BULK_REQUEST,
+                                  community=community,
+                                  pdu=pdu)
+        req_msg_bytes = encoder.encode(req_msg)
+        endpoint.send(req_msg_bytes)
+        res_msg_bytes, addr = await endpoint.receive()
+        try:
+            res_msg = encoder.decode(res_msg_bytes)
+            record_info(info, res_msg)
+            output(outputs, res_msg)
+            error_type = res_msg.pdu.error.type
+            if error_type is not common.ErrorType.NO_ERROR:
+                break
+            data_type = res_msg.pdu.data[-1].type
+            if data_type is common.DataType.END_OF_MIB_VIEW:
+                break
+            if len(res_msg.pdu.data) == max_repetitions:
+                max_repetitions += 10
+            elif max_repetitions > 2:
+                max_repetitions -= 1
+            name = res_msg.pdu.data[-1].name
+            request_id += 1
+        except Exception:
+            print(traceback.format_exec())
+            break
+    output_info(outputs, info)
+    await endpoint.async_close()
 
 
 async def walk_v3(host, port, community, outputs):
