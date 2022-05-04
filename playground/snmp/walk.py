@@ -10,16 +10,19 @@ from hat.drivers.snmp import encoder
 
 @click.command()
 @click.option('-v', '--version', default='v1',
-              type=click.Choice(['v1', 'v2c', 'v3'], case_sensitive=False))
-@click.option('-h', '--host', required=True)
-@click.option('-p', '--port', default=161, type=int)
-@click.option('-c', '--community', default='public')
+              type=click.Choice(['v1', 'v2c', 'v3'], case_sensitive=False),
+              help='SNMP version')
+@click.option('-h', '--host', required=True, help='remote host address')
+@click.option('-p', '--port', default=161, type=int, help='remote port')
+@click.option('-c', '--community', default='public', help='SNMP community')
 @click.option('-o', '--outputs', default=['results'],
               type=click.Choice(['results', 'errors', 'info'],
-                                case_sensitive=False), multiple=True)
+                                case_sensitive=False), multiple=True,
+              help='different outputs (multiple outputs possible)')
 def main(version, host, port, community, outputs):
     aio.init_asyncio()
-    aio.run_asyncio(async_main(version, host, port, community, outputs))
+    aio.run_asyncio(async_main(version, host, port, community,
+                               outputs.lower()))
 
 
 async def async_main(version, host, port, community, outputs):
