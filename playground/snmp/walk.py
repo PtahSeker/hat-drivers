@@ -102,7 +102,7 @@ async def walk_v1(host, port, community, outputs):
             error_type = res_msg.pdu.error.type
             if error_type is not common.ErrorType.NO_ERROR:
                 break
-            name = res_msg.pdu.data[0].name
+            name = res_msg.pdu.data[-1].name
             request_id += 1
         except Exception:
             print(traceback.format_exec())
