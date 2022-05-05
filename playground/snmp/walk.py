@@ -22,7 +22,7 @@ from hat.drivers.snmp import encoder
 def main(version, host, port, community, outputs):
     aio.init_asyncio()
     aio.run_asyncio(async_main(version, host, port, community,
-                               outputs.lower()))
+                               outputs))
 
 
 async def async_main(version, host, port, community, outputs):
